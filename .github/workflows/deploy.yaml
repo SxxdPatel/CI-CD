@@ -1,37 +1,68 @@
-name: Deploy Frontend
+# name: Deploy Frontend
+# on:
+#   push:
+#     branches:
+#       - main
+
+# jobs:
+#   build:
+#     runs-on: ubuntu-latest
+#     steps:
+#       - name: Checkout Source Code and run docker commands
+#         uses: actions/checkout@v3
+
+#       - name: Login to Docker Hub
+#         run: docker login -u ${{ secrets.DOCKER_USERNAME }} -p ${{ secrets.DOCKER_PASSWORD }}
+
+#       - name: Build Docker Image
+#         run: docker build -t saadp30/react-test -f Dockerfile.dev .
+
+#       - name: Run Tests
+#         run: docker run -e CI=true saadp30/react-test npm test
+
+#       - name: Generate deployment package
+#         run: zip -r deploy.zip . -x '*.git*'
+
+#       - name: Deploy to EB
+#         uses: einaregilsson/beanstalk-deploy@v22
+#         with:
+#           aws_access_key: ${{ secrets.AWS_ACCESS_KEY }}
+#           aws_secret_key: ${{ secrets.AWS_SECRET_KEY }}
+#           application_name: docker-gh
+#           environment_name: Docker-gh-env
+#           existing_bucket_name: elasticbeanstalk-us-east-1-970966449236
+#           region: us-east-1
+#           version_label: ${{ github.sha }}
+#           deployment_package: deploy.zip
+#           use_existing_version_if_available: true
+
+
+name: Upload to S3
+
 on:
   push:
     branches:
       - main
 
 jobs:
-  build:
+  upload_to_s3:
     runs-on: ubuntu-latest
+
+    permissions:
+      id-token: write
+      contents: read
+
     steps:
-      - name: Checkout Source Code and run docker commands
-        uses: actions/checkout@v3
+    - name: Checkout code
+      uses: actions/checkout@v3
 
-      - name: Login to Docker Hub
-        run: docker login -u ${{ secrets.DOCKER_USERNAME }} -p ${{ secrets.DOCKER_PASSWORD }}
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v2
+      with:
+        role-to-assume: arn:aws:iam::970966449236:role/gh-action-role
+        aws-region: us-east-1
 
-      - name: Build Docker Image
-        run: docker build -t saadp30/react-test -f Dockerfile.dev .
+    - name: Upload to S3
+      run: |
+        aws s3 cp trust.json s3://idontlikeaws2003/JSON
 
-      - name: Run Tests
-        run: docker run -e CI=true saadp30/react-test npm test
-
-      - name: Generate deployment package
-        run: zip -r deploy.zip . -x '*.git*'
-
-      - name: Deploy to EB
-        uses: einaregilsson/beanstalk-deploy@v22
-        with:
-          aws_access_key: ${{ secrets.AWS_ACCESS_KEY }}
-          aws_secret_key: ${{ secrets.AWS_SECRET_KEY }}
-          application_name: docker-gh
-          environment_name: Docker-gh-env
-          existing_bucket_name: elasticbeanstalk-us-east-1-970966449236
-          region: us-east-1
-          version_label: ${{ github.sha }}
-          deployment_package: deploy.zip
-          use_existing_version_if_available: true
